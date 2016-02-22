@@ -1,4 +1,5 @@
 var electron = require('electron')
+var ipcMain = require('electron').ipcMain;
 var argv = require('minimist')(process.argv.slice(2))
 var fs = require('fs')
 var path = require('path')
@@ -85,7 +86,24 @@ function render (indexUrl, output) {
     landscape: argv.l || argv.landscape || false
   }
 
-  win.webContents.on('did-finish-load', function () {
+  ipcMain.on('store-is-synchronized', function(event, arg) {
+    setTimeout(function() {
+      win.webContents.printToPDF(opts, function (err, data) {
+        if (err) {
+          console.error(err)
+        }
+
+        fs.writeFile(path.resolve(output), data, function (err) {
+          if (err) {
+            console.error(err)
+          }
+          app.quit()
+        })
+      })
+    }, 250);
+  });
+
+  setTimeout(function() {
     win.webContents.printToPDF(opts, function (err, data) {
       if (err) {
         console.error(err)
@@ -98,7 +116,29 @@ function render (indexUrl, output) {
         app.quit()
       })
     })
-  })
+  }, 10*1000);
+
+//  win.webContents.on('did-finish-load', function () {
+//    app.quit()
+//  })
+
+
+  // win.webContents.on('did-finish-load', function () {
+  //   setTimeout(function() {
+  //     win.webContents.printToPDF(opts, function (err, data) {
+  //       if (err) {
+  //         console.error(err)
+  //       }
+  //
+  //       fs.writeFile(path.resolve(output), data, function (err) {
+  //         if (err) {
+  //           console.error(err)
+  //         }
+  //         app.quit()
+  //       })
+  //     })
+  //   }, 5000)
+  // })
 }
 
 function usage (code) {
